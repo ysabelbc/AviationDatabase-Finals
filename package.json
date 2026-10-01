@@ -1,0 +1,20 @@
+{
+  "name": "pink-horizon-application-form",
+  "version": "2.0.0",
+  "description": "Pink Horizon Academy - online application, registration, login, and student LMS backed by the PersonINFO SQL Server database",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.19.0",
+    "msnodesqlv8": "^5.5.0",
+    "mssql": "^11.0.1"
+  }
+}

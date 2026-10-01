@@ -1,0 +1,12 @@
+# Dependencies — reinstall with: npm install
+node_modules/
+
+# Environment variables — contains DB credentials, never commit this
+.env
+
+# Windows junk
+Thumbs.db
+desktop.ini
+
+# Nested project folder (has its own git repo)
+Pink Horizon Academy - PHA/

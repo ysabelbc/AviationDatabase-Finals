@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pink Horizon Academy</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- TOP NAV -->
+  <header class="topbar">
+    <div class="logo" data-go="landing">
+      <div class="logo-mark">PH</div>
+      <div>
+        <div class="logo-title">Pink Horizon</div>
+        <div class="logo-sub">Academy</div>
+      </div>
+    </div>
+    <nav class="topnav" id="topnav">
+      <button data-go="landing">Home</button>
+      <button data-go="apply">Apply</button>
+      <button data-go="login">Login</button>
+      <button data-go="registrar" class="ghost">Registrar</button>
+    </nav>
+    <div class="topnav-user" id="topnavUser" hidden>
+      <span id="userChip"></span>
+      <button id="logoutBtn" class="ghost small">Logout</button>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ LANDING ============ -->
+    <section id="view-landing" class="view active">
+      <div class="hero">
+        <div class="hero-glow"></div>
+        <div class="hero-inner">
+          <span class="pill">Admissions Open · A.Y. 2026–2027</span>
+          <h1>Reach your <span class="grad">pink horizon</span>.</h1>
+          <p class="hero-lead">Apply online in minutes. Fill out your student profile, create your account, and step into your Pink Horizon Academy student portal.</p>
+          <div class="hero-cta">
+            <button class="btn-primary" data-go="apply">Start your application</button>
+            <button class="btn-outline" data-go="login">I already have an account</button>
+          </div>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature"><div class="fi fi-pink">1</div><h3>Apply</h3><p>Complete the multi-step application form with your personal, family, and academic details.</p></div>
+        <div class="feature"><div class="fi fi-blue">2</div><h3>Get Registered</h3><p>We create your student record and account instantly, and you get your official Student No.</p></div>
+        <div class="feature"><div class="fi fi-green">3</div><h3>Log in to your LMS</h3><p>Access your student portal: profile, enrolled program, announcements, and class schedule.</p></div>
+      </div>
+    </section>
+
+    <!-- ============ APPLY ============ -->
+    <section id="view-apply" class="view">
+      <div class="page">
+        <h1 class="page-title">Application Form</h1>
+        <p class="page-sub">Fields marked <span class="req">*</span> are required. Everything you enter is saved to the Academy database.</p>
+
+        <div class="stepper" id="stepper">
+          <div class="step active" data-step="0"><b>1</b> Personal</div>
+          <div class="step" data-step="1"><b>2</b> Family</div>
+          <div class="step" data-step="2"><b>3</b> Education</div>
+          <div class="step" data-step="3"><b>4</b> Health &amp; More</div>
+          <div class="step" data-step="4"><b>5</b> Account</div>
+        </div>
+
+        <form id="applyForm" autocomplete="off" novalidate>
+          <!-- STEP 1: PERSONAL -->
+          <fieldset class="step-panel active" data-step="0">
+            <legend>Personal Information</legend>
+            <div class="grid">
+              <label><span class="lbl">First Name <span class="req">*</span></span><input name="FName" required /></label>
+              <label><span class="lbl">Middle Name</span><input name="MName" /></label>
+              <label><span class="lbl">Last Name <span class="req">*</span></span><input name="LName" required /></label>
+              <label><span class="lbl">Nickname</span><input name="Nickname" /></label>
+              <label><span class="lbl">Age</span><input name="Age" type="number" readonly placeholder="Auto from birthday" title="Automatically calculated from your birthday" /></label>
+              <label><span class="lbl">Sex <span class="req">*</span></span><select name="SexID" data-lk="sex" required></select></label>
+              <label><span class="lbl">Civil Status <span class="req">*</span></span><select name="CivilStatusID" data-lk="civil" required></select></label>
+              <label><span class="lbl">Birthday</span><input name="Birthday" type="date" /></label>
+              <label><span class="lbl">Birthplace</span><input name="Birthplace" /></label>
+              <label><span class="lbl">Citizenship</span><input name="Citizenship" placeholder="Filipino" /></label>
+              <label><span class="lbl">Religion <span class="req">*</span></span><select name="ReligionID" data-lk="religion" required></select></label>
+              <label><span class="lbl">Region <span class="req">*</span></span><select name="RegionID" data-lk="region" required></select></label>
+              <label><span class="lbl">Languages Spoken</span><input name="LanguageSpoken" placeholder="Filipino, English" /></label>
+              <label><span class="lbl">Indigenous Group</span><input name="Indigenous" placeholder="If applicable" /></label>
+              <label><span class="lbl">Residence <span class="req">*</span></span><select name="ResidenceID" data-lk="residence" required></select></label>
+              <label><span class="lbl">Contact No.</span><input name="Contact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" /></label>
+              <label><span class="lbl">Email</span><input name="Email" type="email" placeholder="name@gmail.com" /></label>
+              <label class="wide"><span class="lbl">Present Address</span><input name="PresentAdd" /></label>
+              <label class="wide"><span class="lbl">Permanent Address</span><input name="PermanentAdd" /></label>
+            </div>
+            <legend class="sub-legend">Enrollment</legend>
+            <div class="grid">
+              <label><span class="lbl">Campus <span class="req">*</span></span><select name="CampusID" data-lk="campus" required></select></label>
+              <label><span class="lbl">Program <span class="req">*</span></span><select name="ProgramID" data-lk="program" required></select></label>
+              <label><span class="lbl">Semester <span class="req">*</span></span><select name="SemID" data-lk="semester" required></select></label>
+              <label><span class="lbl">Academic Year <span class="req">*</span></span><select name="AcadYearID" data-lk="acadYear" required></select></label>
+              <label><span class="lbl">Year &amp; Section</span><input name="YearSec" placeholder="1-A" /></label>
+            </div>
+          </fieldset>
+
+          <!-- STEP 2: FAMILY -->
+          <fieldset class="step-panel" data-step="1">
+            <legend>Family Background</legend>
+            <div class="grid">
+              <label><span class="lbl">Parents' Marital Status <span class="req">*</span></span><select name="f_MaritalID" data-lk="marital" required></select></label>
+              <label><span class="lbl">Living Arrangement <span class="req">*</span></span><select name="f_LivingID" data-lk="living" required></select></label>
+              <label><span class="lbl">Father's Name</span><input name="f_FName" /></label>
+              <label><span class="lbl">Father's Occupation</span><input name="f_Foccupation" /></label>
+              <label><span class="lbl">Father's Contact</span><input name="f_Fcontact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" /></label>
+              <label><span class="lbl">Mother's Name</span><input name="f_Mname" /></label>
+              <label><span class="lbl">Mother's Occupation</span><input name="f_Moccupation" /></label>
+              <label><span class="lbl">Mother's Contact</span><input name="f_Mcontact" inputmode="numeric" maxlength="11" placeholder="09XXXXXXXXX" /></label>
+              <label><span class="lbl">No. of Siblings</span><input name="f_NumofSibs" type="number" inputmode="numeric" min="0" step="1" placeholder="Numbers only" /></label>
+              <label><span class="lbl">Birth Order</span><input name="f_Birthorder" type="number" inputmode="numeric" min="1" step="1" placeholder="Numbers only" /></label>
+              <label><span class="lbl">Household Monthly Income <span class="req">*</span></span><select name="f_HouseIncomeID" data-lk="income" required></select></label>
+              <label><span class="lbl">Who finances your studies?</span><input name="f_Finance" placeholder="Parents / Scholarship / Self" /></label>
+              <label class="check"><input type="checkbox" name="f_Is4PsMember" /> <span>4Ps Member</span></label>
+            </div>
+          </fieldset>
+
+          <!-- STEP 3: EDUCATION -->
+          <fieldset class="step-panel" data-step="2">
+            <legend>Educational Background</legend>
+            <div class="grid">
+              <label><span class="lbl">Elementary School</span><input name="e_ElemName" /></label>
+              <label><span class="lbl">Year Graduated</span><input name="e_ElemYear" type="number" inputmode="numeric" min="1950" max="2050" step="1" placeholder="2017" /></label>
+              <label><span class="lbl">Junior High School</span><input name="e_JHName" /></label>
+              <label><span class="lbl">Year Graduated</span><input name="e_JHYear" type="number" inputmode="numeric" min="1950" max="2050" step="1" placeholder="2021" /></label>
+              <label><span class="lbl">Senior High School</span><input name="e_SHName" /></label>
+              <label><span class="lbl">Year Graduated</span><input name="e_SHYear" type="number" inputmode="numeric" min="1950" max="2050" step="1" placeholder="2023" /></label>
+              <label><span class="lbl">SHS Track / Strand</span><input name="e_SHTrack" placeholder="STEM" /></label>
+              <label class="wide"><span class="lbl">Awards / Honors</span><input name="e_Awards" /></label>
+              <label class="wide"><span class="lbl">Scholarship (if any)</span><input name="e_Scholar" /></label>
+            </div>
+          </fieldset>
+
+          <!-- STEP 4: HEALTH + OTHER -->
+          <fieldset class="step-panel" data-step="3">
+            <legend>Health Information</legend>
+            <div class="grid">
+              <label><span class="lbl">Height (m)</span><input name="m_Height" type="number" inputmode="decimal" step="0.01" min="0" placeholder="1.70" /></label>
+              <label><span class="lbl">Weight (kg)</span><input name="m_Weight" type="number" inputmode="decimal" step="0.01" min="0" placeholder="60.0" /></label>
+              <label><span class="lbl">Chronic Condition</span><input name="m_Chronic" placeholder="If any" /></label>
+              <label><span class="lbl">Disability</span><input name="m_Disability" placeholder="If any" /></label>
+              <label class="check"><input type="checkbox" name="m_PWD" /> <span>Person With Disability (PWD)</span></label>
+            </div>
+            <legend class="sub-legend">Other Information</legend>
+            <div class="grid">
+              <label><span class="lbl">Interests</span><input name="o_Sinterest" /></label>
+              <label><span class="lbl">Skills</span><input name="o_Skill" /></label>
+              <label><span class="lbl">Hobbies</span><input name="o_Hobbies" /></label>
+              <label><span class="lbl">Ambition</span><input name="o_Ambition" /></label>
+              <label class="wide"><span class="lbl">Motto</span><input name="o_Motto" /></label>
+            </div>
+          </fieldset>
+
+          <!-- STEP 5: ACCOUNT -->
+          <fieldset class="step-panel" data-step="4">
+            <legend>Create Your Account</legend>
+            <p class="page-sub">This is what you will use to log in to your student portal.</p>
+            <div class="grid">
+              <label><span class="lbl">Username <span class="req">*</span></span><input name="a_username" required autocomplete="off" /></label>
+              <label><span class="lbl">Password <span class="req">*</span></span><input name="a_password" type="password" required minlength="4" /></label>
+              <label><span class="lbl">Confirm Password <span class="req">*</span></span><input name="a_confirm" type="password" required minlength="4" /></label>
+            </div>
+            <p class="note">Your password is stored securely as a bcrypt hash, never in plain text.</p>
+          </fieldset>
+
+          <div class="form-error" id="applyError" hidden></div>
+
+          <div class="form-nav">
+            <button type="button" class="btn-outline" id="prevBtn" hidden>Back</button>
+            <button type="button" class="btn-primary" id="nextBtn">Next</button>
+            <button type="submit" class="btn-primary" id="submitBtn" hidden>Submit Application</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ REGISTERED ============ -->
+    <section id="view-registered" class="view">
+      <div class="page center">
+        <div class="success-card">
+          <div class="success-check">✓</div>
+          <h1>You're registered!</h1>
+          <p class="page-sub">Welcome to Pink Horizon Academy. Your student record and account have been created.</p>
+          <div class="cred-box">
+            <div><span>Name</span><b id="rgName">—</b></div>
+            <div><span>Student No.</span><b id="rgStudentNo">—</b></div>
+            <div><span>Username</span><b id="rgUsername">—</b></div>
+          </div>
+          <p class="note">Please proceed to login using the account you just created.</p>
+          <button class="btn-primary" data-go="login">Proceed to Login</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LOGIN ============ -->
+    <section id="view-login" class="view">
+      <div class="page center">
+        <div class="auth-card">
+          <h1>Student Login</h1>
+          <p class="page-sub">Sign in to your Pink Horizon portal.</p>
+          <form id="loginForm">
+            <label><span class="lbl">Username</span><input name="username" required /></label>
+            <label><span class="lbl">Password</span><input name="password" type="password" required /></label>
+            <div class="form-error" id="loginError" hidden></div>
+            <button type="submit" class="btn-primary full">Log In</button>
+          </form>
+          <p class="alt">No account yet? <a data-go="apply">Apply now</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LMS PORTAL ============ -->
+    <section id="view-lms" class="view">
+      <div class="portal">
+        <!-- SIDEBAR -->
+        <aside class="portal-side">
+          <div class="portal-brand">
+            <div class="portal-avatar" id="lmsAvatar">S</div>
+            <div>
+              <div class="portal-name" id="lmsSideName">Student</div>
+              <div class="portal-sno" id="lmsSideSno">PHA-0000-00000</div>
+            </div>
+          </div>
+          <nav class="portal-nav">
+            <button class="pnav active" data-lms="dashboard">Dashboard</button>
+            <button class="pnav" data-lms="courses">Courses</button>
+            <button class="pnav" data-lms="schedule">Schedule</button>
+            <button class="pnav" data-lms="profile">Profile</button>
+          </nav>
+          <button class="portal-logout" id="portalLogout">Logout</button>
+        </aside>
+
+        <!-- CONTENT -->
+        <div class="portal-main">
+          <!-- DASHBOARD -->
+          <div class="lms-panel active" data-lms="dashboard">
+            <div class="lms-hero">
+              <div>
+                <div class="lms-hi">Welcome back,</div>
+                <h1 id="lmsName">Student</h1>
+                <div class="lms-meta" id="lmsMeta"></div>
+              </div>
+            </div>
+            <div class="lms-stat-row" id="lmsStats"></div>
+            <div class="dash-cols">
+              <div class="dash-left">
+                <div class="panel">
+                  <h3>Announcements</h3>
+                  <div id="lmsAnnouncements"></div>
+                </div>
+              </div>
+              <aside class="dash-right">
+                <div class="widget">
+                  <h4>Today's Classes</h4>
+                  <div id="lmsToday"></div>
+                </div>
+                <div class="widget">
+                  <h4>Academic Calendar</h4>
+                  <div id="lmsCalendar"></div>
+                </div>
+                <div class="widget">
+                  <h4>Quick Links</h4>
+                  <div class="quick-links">
+                    <button data-lms="courses">View my Courses</button>
+                    <button data-lms="schedule">View my Schedule</button>
+                    <button data-lms="profile">View my Profile</button>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <!-- COURSES -->
+          <div class="lms-panel" data-lms="courses">
+            <h1 class="page-title">My Courses</h1>
+            <p class="page-sub">Subjects enrolled for the current term.</p>
+            <div class="course-grid" id="lmsCourseCards"></div>
+          </div>
+
+          <!-- SCHEDULE -->
+          <div class="lms-panel" data-lms="schedule">
+            <h1 class="page-title">My Schedule</h1>
+            <p class="page-sub">Your weekly class schedule.</p>
+            <div class="panel">
+              <table class="lms-table">
+                <thead><tr><th>Code</th><th>Course</th><th>Units</th><th>Schedule</th></tr></thead>
+                <tbody id="lmsCourses"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- PROFILE -->
+          <div class="lms-panel" data-lms="profile">
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-sub">Your student record on file with the Registrar.</p>
+            <div class="panel">
+              <div id="lmsProfile" class="profile-mini"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ REGISTRAR (analytics + students) ============ -->
+    <section id="view-registrar" class="view">
+      <div class="page">
+        <h1 class="page-title">Registrar Dashboard</h1>
+        <p class="page-sub">Live analytics from the Academy database — includes every new applicant.</p>
+
+        <div class="cards" id="summaryCards"></div>
+
+        <div class="chart-grid">
+          <div class="panel"><h3>Applicants per Program</h3><canvas id="chartProgram"></canvas></div>
+          <div class="panel"><h3>Sex Distribution</h3><canvas id="chartSex"></canvas></div>
+          <div class="panel"><h3>Applicants per Campus</h3><canvas id="chartCampus"></canvas></div>
+          <div class="panel"><h3>Applicants per Region</h3><canvas id="chartRegion"></canvas></div>
+          <div class="panel wide"><h3>Household Monthly Income Bracket</h3><canvas id="chartIncome"></canvas></div>
+        </div>
+
+        <h2 class="page-title" style="margin-top:30px;">Student Records</h2>
+        <div class="toolbar">
+          <input id="search" type="text" placeholder="Search name or student no." />
+          <select id="filterProgram"><option value="">All Programs</option></select>
+          <select id="filterCampus"><option value="">All Campuses</option></select>
+          <select id="filterSex"><option value="">All Sexes</option></select>
+          <button id="clearFilters" class="ghost">Clear</button>
+        </div>
+        <div class="table-wrap">
+          <table id="studentTable">
+            <thead><tr><th>Student No.</th><th>Name</th><th>Program</th><th>Campus</th><th>Yr/Sec</th><th>Sex</th><th>Region</th></tr></thead>
+            <tbody id="studentBody"></tbody>
+          </table>
+          <div id="studentEmpty" class="empty" hidden>No matching students.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- STUDENT DETAIL MODAL (registrar) -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
