@@ -132,6 +132,6 @@ Pink-Horizon-Application-Form/
 
 For this **local school demo**, passwords are hashed with bcrypt but there is no HTTPS,
 email verification, or rate limiting — those matter only if the app is deployed online. The
-`.env` session secret and DB credentials are development values. This project was built with
-AI assistance (Kiro) on top of the student-authored `PersonINFO` schema and seed data.
+`.env` session secret and DB credentials are development values.I designed the PersonINFO schema and seed data. AI assistance was used for the Node.js
+web layer and the LMS tables; I reviewed and can explain every query.
 ```
