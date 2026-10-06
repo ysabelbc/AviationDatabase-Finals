@@ -44,12 +44,12 @@ function go(view) {
   const el = $(`#view-${view}`);
   if (el) el.classList.add("active");
   $$(".topnav button").forEach((b) => b.classList.toggle("active", b.dataset.go === view));
-  // The LMS is a full-screen portal: hide the public top bar while inside it.
-  document.body.classList.toggle("in-portal", view === "lms");
+  document.body.classList.toggle("in-portal", view === "lms" || view === "admin");
   window.scrollTo(0, 0);
-  if (view === "apply") ensureLookups().then(fillFormLookups);
+  if (view === "apply")     ensureLookups().then(fillFormLookups);
   if (view === "registrar") loadDashboard();
-  if (view === "lms") loadLMS();
+  if (view === "lms")       loadLMS();
+  if (view === "admin")     loadAdmin();
 }
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-go]");
@@ -79,14 +79,33 @@ async function doLogout() {
 }
 $("#logoutBtn").addEventListener("click", doLogout);
 $("#portalLogout").addEventListener("click", doLogout);
+$("#adminLogout").addEventListener("click", doLogout);
 
-// LMS sidebar sub-navigation
+// LMS sidebar sub-navigation (student)
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-lms]");
   if (!t || t.tagName !== "BUTTON") return;
   const key = t.dataset.lms;
-  $$(".pnav").forEach((b) => b.classList.toggle("active", b.dataset.lms === key));
-  $$(".lms-panel").forEach((p) => p.classList.toggle("active", p.dataset.lms === key));
+  // only affect pnav buttons inside the student portal
+  $$("#view-lms .pnav").forEach((b) => b.classList.toggle("active", b.dataset.lms === key));
+  $$("#view-lms .lms-panel").forEach((p) => p.classList.toggle("active", p.dataset.lms === key));
+  if (key === "grades") loadLMSGrades();
+  if (key === "schedule") loadLMSSchedule();
+  if (key === "profile") loadLMSProfile();
+});
+
+// Admin sidebar sub-navigation
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-adm]");
+  if (!t || t.tagName !== "BUTTON") return;
+  const key = t.dataset.adm;
+  $$("#view-admin .pnav").forEach((b) => b.classList.toggle("active", b.dataset.adm === key));
+  // show correct panel
+  $$(`#view-admin .lms-panel`).forEach((p) => p.classList.toggle("active", p.id === key));
+  if (key === "adm-courses")     admLoadCourses();
+  if (key === "adm-sections")    admLoadSections();
+  if (key === "adm-enrollments") admLoadEnrollments();
+  if (key === "adm-grades")      admLoadGrades();
 });
 
 // ---------------- LOOKUPS ----------------
@@ -277,7 +296,8 @@ $("#loginForm").addEventListener("submit", async (e) => {
     await postJSON(`${API}/login`, { username: f.username.value.trim(), password: f.password.value });
     f.reset();
     await refreshAuthUI();
-    go("lms");
+    const { user } = await getJSON(`${API}/me`);
+    go(user.role === "admin" ? "admin" : "lms");
   } catch (ex) {
     err.textContent = ex.message; err.hidden = false;
   }
@@ -300,11 +320,18 @@ async function loadLMS() {
     $("#lmsSideName").textContent = fullName;
     $("#lmsSideSno").textContent = s.StudentNo;
 
+    // profile picture in sidebar avatar if available
+    if (d.profile && d.profile.PicturePath) {
+      const av = $("#lmsAvatar");
+      av.style.background = "none";
+      av.innerHTML = `<img src="${d.profile.PicturePath}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    }
+
     // dashboard quick stats
     const totalUnits = d.courses.reduce((sum, c) => sum + Number(c.units || 0), 0);
     $("#lmsStats").innerHTML = [
-      ["Enrolled Courses", d.courses.length],
-      ["Total Units", totalUnits],
+      ["Enrolled Courses", d.courses.length || "—"],
+      ["Total Units", totalUnits || "—"],
       ["Semester", s.SemNo || "—"],
       ["Academic Year", s.AcadYear || "—"],
     ].map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
@@ -314,40 +341,135 @@ async function loadLMS() {
       .map((a) => `<div class="ann"><div class="t">${a.title}</div><div class="d">${a.date}</div><div class="b">${a.body}</div></div>`)
       .join("");
 
-    // schedule table
-    $("#lmsCourses").innerHTML = d.courses
-      .map((c) => `<tr><td><b>${c.code}</b></td><td>${c.title}</td><td>${c.units}</td><td>${c.sched}</td></tr>`)
-      .join("");
+    // schedule table (real from DB)
+    $("#lmsCourses").innerHTML = d.courses.length
+      ? d.courses.map((c) => `<tr><td><b>${c.code}</b></td><td>${c.title}</td><td>${c.units}</td><td>${c.sched}</td><td>${c.room}</td><td>${c.instructor}</td></tr>`).join("")
+      : `<tr><td colspan="6" class="grade-empty">No subjects enrolled yet.</td></tr>`;
 
     // course cards
-    $("#lmsCourseCards").innerHTML = d.courses
-      .map((c) => `<div class="course-card"><div class="cc-code">${c.code}</div><div class="cc-title">${c.title}</div><div class="cc-meta">${c.units} units · ${c.sched}</div></div>`)
-      .join("");
+    $("#lmsCourseCards").innerHTML = d.courses.length
+      ? d.courses.map((c) => `<div class="course-card"><div class="cc-code">${c.code}</div><div class="cc-title">${c.title}</div><div class="cc-meta">${c.units} units · ${c.sched}</div><div class="cc-meta" style="margin-top:4px;color:var(--blue);">${c.instructor}</div></div>`).join("")
+      : `<div class="grade-empty" style="grid-column:1/-1;">No subjects enrolled yet. Contact the Registrar.</div>`;
 
-    // Today's Classes widget: match the current weekday against each course schedule.
-    const dayCodes = ["Sun", "M", "T", "W", "Th", "F", "Sat"];
+    // Today's Classes widget
+    const dayCodes = ["Sun","M","T","W","Th","F","Sat"];
     const todayCode = dayCodes[new Date().getDay()];
     const todays = d.courses.filter((c) => scheduleHasDay(c.sched, todayCode));
     $("#lmsToday").innerHTML = todays.length
-      ? todays.map((c) => `<div class="today-item"><span class="dot"></span><div><div class="ti-code">${c.code} — ${c.title}</div><div class="ti-sched">${c.sched}</div></div></div>`).join("")
-      : `<div class="today-empty">No classes scheduled today. Enjoy your day off.</div>`;
+      ? todays.map((c) => `<div class="today-item"><span class="dot"></span><div><div class="ti-code">${c.code} — ${c.title}</div><div class="ti-sched">${c.sched} · ${c.room}</div></div></div>`).join("")
+      : `<div class="today-empty">No classes scheduled today.</div>`;
 
-    // Academic Calendar widget (static key dates for the term)
+    // Academic Calendar
     $("#lmsCalendar").innerHTML = ACADEMIC_CALENDAR
       .map((e) => `<div class="cal-item"><div class="cal-date"><span class="m">${e.month}</span><span class="d">${e.day}</span></div><div class="cal-text"><div class="ct-title">${e.title}</div><div class="ct-sub">${e.sub}</div></div></div>`)
       .join("");
 
-    // profile
-    $("#lmsProfile").innerHTML = [
-      ["Full Name", fullName], ["Student No.", s.StudentNo], ["Program", s.ProgramName], ["Campus", s.CampusName],
-      ["Semester", s.SemNo], ["Academic Year", s.AcadYear], ["Year/Section", s.YearSec],
-      ["Email", s.Email], ["Contact", s.Contact],
-    ].map(([k, v]) => `<div class="row"><span>${k}</span><b>${v || "—"}</b></div>`).join("");
   } catch (ex) {
     if (String(ex.message).includes("logged in")) { go("login"); return; }
     $("#lmsAnnouncements").innerHTML = `<div class="form-error">${ex.message}</div>`;
   }
 }
+
+// Real schedule from DB
+async function loadLMSSchedule() {
+  try {
+    const rows = await getJSON(`${API}/lms/schedule`);
+    $("#lmsCourses").innerHTML = rows.length
+      ? rows.map((r) => `<tr><td><b>${r.CourseCode}</b></td><td>${r.CourseName}</td><td>${r.Units}</td><td>${r.Schedule||"TBA"}</td><td>${r.Room||"TBA"}</td><td>${r.Instructor||"TBA"}</td></tr>`).join("")
+      : `<tr><td colspan="6" class="grade-empty">No subjects enrolled yet.</td></tr>`;
+  } catch(ex) { console.error(ex); }
+}
+
+// Grades from DB (read-only)
+async function loadLMSGrades() {
+  try {
+    const rows = await getJSON(`${API}/lms/grades`);
+    if (!rows.length) {
+      $("#lmsGrades").innerHTML = `<tr><td colspan="7" class="grade-empty">No grades available yet.</td></tr>`;
+      $("#lmsGpaRow").textContent = "";
+      return;
+    }
+    $("#lmsGrades").innerHTML = rows.map((r) => {
+      const fg = r.FinalGrade != null ? Number(r.FinalGrade).toFixed(2) : "—";
+      const badge = r.Remarks === "PASSED" ? `<span class="badge-pass">PASSED</span>`
+                  : r.Remarks === "FAILED" ? `<span class="badge-fail">FAILED</span>`
+                  : r.Remarks === "INC"    ? `<span class="badge-inc">INC</span>`
+                  : `<span class="badge-na">—</span>`;
+      return `<tr>
+        <td><b>${r.CourseCode}</b></td>
+        <td>${r.CourseName}</td>
+        <td>${r.Units}</td>
+        <td>${r.Midterm != null ? Number(r.Midterm).toFixed(2) : "—"}</td>
+        <td>${r.Finals  != null ? Number(r.Finals).toFixed(2)  : "—"}</td>
+        <td><b>${fg}</b></td>
+        <td>${badge}</td>
+      </tr>`;
+    }).join("");
+    // GWA
+    const graded = rows.filter((r) => r.FinalGrade != null);
+    if (graded.length) {
+      const totalUnits = graded.reduce((s,r) => s + Number(r.Units), 0);
+      const weighted   = graded.reduce((s,r) => s + Number(r.FinalGrade) * Number(r.Units), 0);
+      const gwa = (weighted / totalUnits).toFixed(2);
+      $("#lmsGpaRow").textContent = `General Weighted Average (GWA): ${gwa}`;
+    }
+  } catch(ex) { console.error(ex); }
+}
+
+// Profile with picture upload
+async function loadLMSProfile() {
+  try {
+    const { student: s, profile } = await getJSON(`${API}/lms/profile`);
+    const fullName = `${s.FName} ${s.LName}`;
+    $("#picName").textContent = fullName;
+    $("#picSno").textContent  = s.StudentNo;
+    if (profile && profile.PicturePath) {
+      $("#picImg").src = profile.PicturePath;
+      $("#picImg").hidden = false;
+      $("#picInitials").style.display = "none";
+    } else {
+      $("#picImg").hidden = true;
+      $("#picInitials").style.display = "";
+      $("#picInitials").textContent = (s.FName[0]||"S").toUpperCase();
+    }
+    $("#lmsProfile").innerHTML = [
+      ["Full Name", fullName], ["Student No.", s.StudentNo],
+      ["Program", s.ProgramName], ["Campus", s.CampusName],
+      ["Semester", s.SemNo], ["Academic Year", s.AcadYear],
+      ["Year/Section", s.YearSec], ["Email", s.Email], ["Contact", s.Contact],
+      ["Religion", s.ReligionName], ["Region", s.RegionName],
+      ["Sex", s.SexName], ["Civil Status", s.CivilStatus],
+    ].map(([k, v]) => `<div class="row"><span>${k}</span><b>${v||"—"}</b></div>`).join("");
+  } catch(ex) { console.error(ex); }
+}
+
+// Profile picture upload handler
+$("#picInput").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const msg = $("#picMsg");
+  msg.textContent = "Uploading...";
+  const fd = new FormData();
+  fd.append("picture", file);
+  try {
+    const r = await fetch(`${API}/lms/profile/picture`, { method:"POST", body:fd });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    msg.textContent = "Photo updated.";
+    msg.style.color = "var(--green)";
+    // Update pic immediately
+    $("#picImg").src = data.picturePath + "?t=" + Date.now();
+    $("#picImg").hidden = false;
+    $("#picInitials").style.display = "none";
+    // Also update sidebar avatar
+    const av = $("#lmsAvatar");
+    av.style.background = "none";
+    av.innerHTML = `<img src="${data.picturePath}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+  } catch(ex) {
+    msg.textContent = ex.message;
+    msg.style.color = "var(--bad)";
+  }
+});
 
 // ============================================================
 //  REGISTRAR DASHBOARD
@@ -488,6 +610,239 @@ $("#modal").addEventListener("click", (e) => { if (e.target.id === "modal") $("#
 (async function init() {
   showStep(0);
   await refreshAuthUI();
-  // if already logged in, jump straight to LMS
-  try { await getJSON(`${API}/me`); go("lms"); } catch { go("landing"); }
+  // if already logged in, jump to correct portal
+  try {
+    const { user } = await getJSON(`${API}/me`);
+    go(user.role === "admin" ? "admin" : "lms");
+  } catch { go("landing"); }
 })();
+
+// ============================================================
+//  ADMIN PORTAL
+// ============================================================
+let admData = { courses:[], sections:[], students:[] };
+let admLoaded = false;
+
+async function loadAdmin() {
+  if (admLoaded) return;
+  try {
+    const s = await getJSON(`${API}/stats/summary`);
+    $("#admStats").innerHTML = [
+      ["Total Students", s.totalStudents],
+      ["Student Accounts", s.totalAccounts],
+      ["Programs", s.totalPrograms],
+      ["4Ps Members", s.fourPsMembers],
+      ["PWD Students", s.pwdStudents],
+    ].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+    admLoaded = true;
+  } catch(ex) { console.error(ex); }
+}
+
+// ---- helper: show/hide admin modal ----
+let admModalCallback = null;
+function openAdmModal(title, fieldsHTML, onSubmit) {
+  $("#admModalTitle").textContent = title;
+  $("#admFormFields").innerHTML = fieldsHTML;
+  $("#admFormError").hidden = true;
+  admModalCallback = onSubmit;
+  $("#admModal").hidden = false;
+}
+function closeAdmModal() { $("#admModal").hidden = true; admModalCallback = null; }
+$("#admModalClose").addEventListener("click", closeAdmModal);
+$("#admModalCancel").addEventListener("click", closeAdmModal);
+$("#admModal").addEventListener("click", (e) => { if(e.target.id==="admModal") closeAdmModal(); });
+$("#admForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = $("#admFormError");
+  err.hidden = true;
+  if (!admModalCallback) return;
+  try { await admModalCallback(new FormData(e.target)); closeAdmModal(); }
+  catch(ex) { err.textContent = ex.message; err.hidden = false; }
+});
+
+// -------- SUBJECTS --------
+async function admLoadCourses() {
+  const rows = await getJSON(`${API}/admin/courses`);
+  admData.courses = rows;
+  $("#bodyAdmCourses").innerHTML = rows.map(r=>`
+    <tr>
+      <td><b>${r.CourseCode}</b></td>
+      <td>${r.CourseName}</td>
+      <td>${r.Units}</td>
+      <td>${r.Description||"—"}</td>
+      <td>
+        <button class="btn-edit" onclick="admEditCourse(${r.CourseID})">Edit</button>
+        <button class="btn-drop" onclick="admDeactivateCourse(${r.CourseID})">Remove</button>
+      </td>
+    </tr>`).join("") || `<tr><td colspan="5" class="grade-empty">No subjects yet.</td></tr>`;
+}
+$("#btnAddCourse").addEventListener("click", () => {
+  openAdmModal("Add Subject", `
+    <div class="grid">
+      <label><span class="lbl">Subject Code <span class="req">*</span></span><input name="CourseCode" required /></label>
+      <label><span class="lbl">Subject Name <span class="req">*</span></span><input name="CourseName" required /></label>
+      <label><span class="lbl">Units</span><input name="Units" type="number" value="3" min="1" max="9" /></label>
+      <label class="wide"><span class="lbl">Description</span><input name="Description" /></label>
+    </div>`, async (fd) => {
+    await postJSON(`${API}/admin/courses`, Object.fromEntries(fd));
+    admLoadCourses();
+  });
+});
+window.admEditCourse = (id) => {
+  const c = admData.courses.find(x=>x.CourseID===id);
+  if(!c) return;
+  openAdmModal("Edit Subject", `
+    <div class="grid">
+      <label><span class="lbl">Subject Code <span class="req">*</span></span><input name="CourseCode" value="${c.CourseCode}" required /></label>
+      <label><span class="lbl">Subject Name <span class="req">*</span></span><input name="CourseName" value="${c.CourseName}" required /></label>
+      <label><span class="lbl">Units</span><input name="Units" type="number" value="${c.Units}" min="1" max="9" /></label>
+      <label class="wide"><span class="lbl">Description</span><input name="Description" value="${c.Description||""}" /></label>
+    </div>`, async (fd) => {
+    await getJSON(`${API}/admin/courses/${id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(Object.fromEntries(fd)) });
+    admLoadCourses();
+  });
+};
+window.admDeactivateCourse = async (id) => {
+  if(!confirm("Remove this subject?")) return;
+  await getJSON(`${API}/admin/courses/${id}`, { method:"DELETE" });
+  admLoadCourses();
+};
+
+// -------- SCHEDULES --------
+async function admLoadSections() {
+  const [rows, lk] = await Promise.all([getJSON(`${API}/admin/sections`), ensureLookups()]);
+  admData.sections = rows;
+  $("#bodyAdmSections").innerHTML = rows.map(r=>`
+    <tr>
+      <td><b>${r.CourseCode}</b></td>
+      <td>${r.CourseName}</td>
+      <td>${r.SectionCode||"—"}</td>
+      <td>${r.Schedule||"TBA"}</td>
+      <td>${r.Room||"TBA"}</td>
+      <td>${r.Instructor||"TBA"}</td>
+      <td>${r.SemNo||"—"} ${r.AcadYear||""}</td>
+      <td>
+        <button class="btn-edit" onclick="admEditSection(${r.SectionID})">Edit</button>
+        <button class="btn-drop" onclick="admDropSection(${r.SectionID})">Remove</button>
+      </td>
+    </tr>`).join("") || `<tr><td colspan="8" class="grade-empty">No schedules yet.</td></tr>`;
+}
+function sectionFormHTML(c={}) {
+  const courseOpts = admData.courses.map(x=>`<option value="${x.CourseID}" ${c.CourseID===x.CourseID?"selected":""}>${x.CourseCode} - ${x.CourseName}</option>`).join("");
+  const semOpts = (LOOKUPS?.semester||[]).map(x=>`<option value="${x.id}" ${c.SemID===x.id?"selected":""}>${x.name}</option>`).join("");
+  const ayOpts  = (LOOKUPS?.acadYear||[]).map(x=>`<option value="${x.id}" ${c.AcadYearID===x.id?"selected":""}>${x.name}</option>`).join("");
+  return `<div class="grid">
+    <label class="wide"><span class="lbl">Subject <span class="req">*</span></span>
+      <select name="CourseID" required><option value="">-- Select --</option>${courseOpts}</select></label>
+    <label><span class="lbl">Section Code</span><input name="SectionCode" value="${c.SectionCode||""}" placeholder="e.g. BSAIT-3A" /></label>
+    <label><span class="lbl">Instructor</span><input name="Instructor" value="${c.Instructor||""}" /></label>
+    <label><span class="lbl">Schedule</span><input name="Schedule" value="${c.Schedule||""}" placeholder="MWF 9:00-10:00" /></label>
+    <label><span class="lbl">Room</span><input name="Room" value="${c.Room||""}" placeholder="Room 201" /></label>
+    <label><span class="lbl">Semester</span><select name="SemID"><option value="">-- Optional --</option>${semOpts}</select></label>
+    <label><span class="lbl">Academic Year</span><select name="AcadYearID"><option value="">-- Optional --</option>${ayOpts}</select></label>
+  </div>`;
+}
+$("#btnAddSection").addEventListener("click", async () => {
+  await ensureLookups(); if(!admData.courses.length) await admLoadCourses();
+  openAdmModal("Add Schedule", sectionFormHTML(), async (fd) => {
+    await postJSON(`${API}/admin/sections`, Object.fromEntries(fd));
+    admLoadSections();
+  });
+});
+window.admEditSection = async (id) => {
+  await ensureLookups(); if(!admData.courses.length) await admLoadCourses();
+  const c = admData.sections.find(x=>x.SectionID===id);
+  openAdmModal("Edit Schedule", sectionFormHTML(c), async (fd) => {
+    await getJSON(`${API}/admin/sections/${id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(Object.fromEntries(fd)) });
+    admLoadSections();
+  });
+};
+window.admDropSection = async (id) => {
+  if(!confirm("Remove this schedule?")) return;
+  await getJSON(`${API}/admin/sections/${id}`, { method:"DELETE" });
+  admLoadSections();
+};
+
+// -------- ENROLLMENTS --------
+async function admLoadEnrollments() {
+  const rows = await getJSON(`${API}/admin/enrollments`);
+  $("#bodyAdmEnroll").innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.StudentNo}</td>
+      <td>${r.StudentName}</td>
+      <td><b>${r.CourseCode}</b></td>
+      <td>${r.SectionCode||"—"}</td>
+      <td>${r.Schedule||"TBA"}</td>
+      <td><span class="badge-${r.Status==="enrolled"?"pass":"na"}">${r.Status}</span></td>
+      <td>${r.Status==="enrolled"?`<button class="btn-drop" onclick="admDropEnroll(${r.EnrollmentID})">Drop</button>`:""}</td>
+    </tr>`).join("") || `<tr><td colspan="7" class="grade-empty">No enrollments yet.</td></tr>`;
+}
+$("#btnAddEnroll").addEventListener("click", async () => {
+  await ensureLookups();
+  const studs = await getJSON(`${API}/admin/students`);
+  admData.students = studs;
+  if(!admData.sections.length) await admLoadSections();
+  const studOpts = studs.map(s=>`<option value="${s.GenID}">${s.StudentNo} — ${s.FullName}</option>`).join("");
+  const secOpts  = admData.sections.map(s=>`<option value="${s.SectionID}">${s.CourseCode} ${s.SectionCode||""} — ${s.Schedule||"TBA"}</option>`).join("");
+  openAdmModal("Enroll Student", `<div class="grid">
+    <label class="wide"><span class="lbl">Student <span class="req">*</span></span>
+      <select name="GenID" required><option value="">-- Select --</option>${studOpts}</select></label>
+    <label class="wide"><span class="lbl">Section / Schedule <span class="req">*</span></span>
+      <select name="SectionID" required><option value="">-- Select --</option>${secOpts}</select></label>
+  </div>`, async (fd) => {
+    await postJSON(`${API}/admin/enrollments`, Object.fromEntries(fd));
+    admLoadEnrollments();
+  });
+});
+window.admDropEnroll = async (id) => {
+  if(!confirm("Drop this enrollment?")) return;
+  await getJSON(`${API}/admin/enrollments/${id}`, { method:"DELETE" });
+  admLoadEnrollments();
+};
+
+// -------- GRADES --------
+async function admLoadGrades(sectionId) {
+  const url = sectionId ? `${API}/admin/grades?sectionId=${sectionId}` : `${API}/admin/grades`;
+  const rows = await getJSON(url);
+
+  // populate section filter
+  if(!admData.sections.length) await admLoadSections();
+  const gf = $("#gradeFilter");
+  if(gf.options.length <= 1) {
+    gf.innerHTML = `<option value="">All Sections</option>` +
+      admData.sections.map(s=>`<option value="${s.SectionID}">${s.CourseCode} ${s.SectionCode||""}</option>`).join("");
+    gf.addEventListener("change", ()=>admLoadGrades(gf.value||undefined));
+  }
+
+  $("#bodyAdmGrades").innerHTML = rows.map(r=>`
+    <tr id="gr-${r.GradeID}">
+      <td>${r.StudentNo}</td>
+      <td>${r.StudentName}</td>
+      <td><b>${r.CourseCode}</b> ${r.CourseName}</td>
+      <td class="grade-cell"><input class="grade-input" id="mid-${r.GradeID}" type="number" step="0.25" min="1" max="5" value="${r.Midterm!=null?r.Midterm:""}" placeholder="1.00" /></td>
+      <td class="grade-cell"><input class="grade-input" id="fin-${r.GradeID}" type="number" step="0.25" min="1" max="5" value="${r.Finals!=null?r.Finals:""}" placeholder="1.00" /></td>
+      <td><b id="fg-${r.GradeID}">${r.FinalGrade!=null?Number(r.FinalGrade).toFixed(2):"—"}</b></td>
+      <td id="rmk-${r.GradeID}">${remarkBadge(r.Remarks)}</td>
+      <td><button class="btn-save-grade" onclick="saveGrade(${r.GradeID})">Save</button></td>
+    </tr>`).join("") || `<tr><td colspan="8" class="grade-empty">No grade records yet. Enroll students first.</td></tr>`;
+}
+function remarkBadge(r) {
+  if(r==="PASSED") return `<span class="badge-pass">PASSED</span>`;
+  if(r==="FAILED") return `<span class="badge-fail">FAILED</span>`;
+  if(r==="INC")    return `<span class="badge-inc">INC</span>`;
+  return `<span class="badge-na">—</span>`;
+}
+window.saveGrade = async (id) => {
+  const mid = $("#mid-"+id).value;
+  const fin = $("#fin-"+id).value;
+  try {
+    const r = await getJSON(`${API}/admin/grades/${id}`, {
+      method:"PUT", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ Midterm:mid||null, Finals:fin||null }),
+    });
+    const fgEl  = $("#fg-"+id);
+    const rmkEl = $("#rmk-"+id);
+    fgEl.textContent  = r.FinalGrade!=null ? Number(r.FinalGrade).toFixed(2) : "—";
+    rmkEl.innerHTML   = remarkBadge(r.Remarks);
+  } catch(ex) { alert("Error saving grade: " + ex.message); }
+};

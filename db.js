@@ -9,6 +9,12 @@
 //                Uses the default tedious driver.
 //
 //  One shared connection pool is reused for every request.
+//
+//  Two helpers are exported:
+//    - runProc(name, params)   -> executes a STORED PROCEDURE (use this)
+//    - runProcMulti(name, ps)  -> same, for procedures with several result sets
+//    - runQuery(query, params) -> runs inline T-SQL (old way; remove once
+//                                 every route has been moved to a procedure)
 // ============================================================
 
 require("dotenv").config();
@@ -84,7 +90,50 @@ if (AUTH === "windows") {
 }
 
 /**
- * Run a query against the pool.
+ * Execute a STORED PROCEDURE on the pool.
+ * The front end never touches a table: server.js calls this, and the
+ * procedure inside SQL Server does the actual SELECT/INSERT/UPDATE/DELETE.
+ *
+ * @param {string} procName - e.g. "usp_Section_Insert"
+ * @param {Array<{name:string, value:any}>} params - procedure parameters
+ *        (name WITHOUT the @, must match the procedure's parameter names)
+ * @returns {Promise<Array>} the first result set (rows), or [] if none
+ *
+ * Example:
+ *   const rows = await runProc("usp_User_GetByUsername",
+ *                              [{ name: "Username", value: "msantos" }]);
+ */
+async function runProc(procName, params = []) {
+  const result = await execProc(procName, params);
+  return result.recordset || [];
+}
+
+/**
+ * Same as runProc, but for procedures that return SEVERAL result sets
+ * (e.g. usp_Student_GetDetail). Returns an array of row-arrays.
+ */
+async function runProcMulti(procName, params = []) {
+  const result = await execProc(procName, params);
+  return result.recordsets || [];
+}
+
+// shared by runProc / runProcMulti
+// A param may carry an optional SQL type: { name, type: sql.Int, value }
+async function execProc(procName, params) {
+  const pool = await poolPromise;
+  const request = pool.request();
+  for (const p of params) {
+    if (p.type) request.input(p.name, p.type, p.value);
+    else request.input(p.name, p.value);
+  }
+  return request.execute(procName); // .execute = call stored proc
+}
+
+/**
+ * Run inline T-SQL against the pool (the OLD way).
+ * Kept so existing routes keep working while you convert them to
+ * stored procedures one by one. Delete it when nothing uses it.
+ *
  * @param {string} query - T-SQL text (may contain @params)
  * @param {Array<{name:string, value:any}>} params - optional inputs
  */
@@ -98,4 +147,4 @@ async function runQuery(query, params = []) {
   return result.recordset;
 }
 
-module.exports = { sql, poolPromise, runQuery };
+module.exports = { sql, poolPromise, runProc, runProcMulti, runQuery };

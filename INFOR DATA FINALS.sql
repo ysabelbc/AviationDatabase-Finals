@@ -41,6 +41,7 @@ GO
 
 --raw
 
+USE PersonINFO;
 SELECT * FROM General_Information
 GO
 
@@ -87,3 +88,8 @@ GO
 ---- Verify
 --SELECT GenID, StudentNo, FName, LName FROM General_Information ORDER BY GenID;
 --GO
+
+SELECT * FROM SYS.TABLES
+SELECT * FROM SYS.procedures
+SELECT * FROM SYS.DATABASE
+SELECT * FROM SYS.TABLES

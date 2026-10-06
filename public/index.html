@@ -230,6 +230,7 @@
             <button class="pnav active" data-lms="dashboard">Dashboard</button>
             <button class="pnav" data-lms="courses">Courses</button>
             <button class="pnav" data-lms="schedule">Schedule</button>
+            <button class="pnav" data-lms="grades">Grades</button>
             <button class="pnav" data-lms="profile">Profile</button>
           </nav>
           <button class="portal-logout" id="portalLogout">Logout</button>
@@ -288,9 +289,22 @@
             <p class="page-sub">Your weekly class schedule.</p>
             <div class="panel">
               <table class="lms-table">
-                <thead><tr><th>Code</th><th>Course</th><th>Units</th><th>Schedule</th></tr></thead>
+                <thead><tr><th>Code</th><th>Course</th><th>Units</th><th>Schedule</th><th>Room</th><th>Instructor</th></tr></thead>
                 <tbody id="lmsCourses"></tbody>
               </table>
+            </div>
+          </div>
+
+          <!-- GRADES -->
+          <div class="lms-panel" data-lms="grades">
+            <h1 class="page-title">My Grades</h1>
+            <p class="page-sub">Grades are view-only. Contact your instructor for concerns.</p>
+            <div class="panel">
+              <table class="lms-table">
+                <thead><tr><th>Code</th><th>Subject</th><th>Units</th><th>Midterm</th><th>Finals</th><th>Final Grade</th><th>Remarks</th></tr></thead>
+                <tbody id="lmsGrades"></tbody>
+              </table>
+              <div id="lmsGpaRow" style="margin-top:14px;text-align:right;font-weight:700;color:var(--blue-deep);"></div>
             </div>
           </div>
 
@@ -298,8 +312,25 @@
           <div class="lms-panel" data-lms="profile">
             <h1 class="page-title">My Profile</h1>
             <p class="page-sub">Your student record on file with the Registrar.</p>
-            <div class="panel">
-              <div id="lmsProfile" class="profile-mini"></div>
+            <div class="profile-layout">
+              <!-- Picture upload -->
+              <div class="pic-card">
+                <div class="pic-wrap" id="picWrap">
+                  <img id="picImg" src="" alt="Profile" hidden />
+                  <div class="pic-initials" id="picInitials">S</div>
+                </div>
+                <p class="pic-name" id="picName"></p>
+                <p class="pic-sno" id="picSno"></p>
+                <label class="btn-outline" style="cursor:pointer;text-align:center;margin-top:10px;">
+                  Change Photo
+                  <input type="file" id="picInput" accept="image/*" style="display:none;" />
+                </label>
+                <div id="picMsg" style="font-size:.8rem;margin-top:8px;color:var(--muted);"></div>
+              </div>
+              <!-- Details -->
+              <div class="panel" style="flex:1;">
+                <div id="lmsProfile" class="profile-mini"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -341,6 +372,143 @@
     </section>
 
   </main>
+
+    <!-- ============ ADMIN PORTAL ============ -->
+    <section id="view-admin" class="view">
+      <div class="portal">
+        <!-- ADMIN SIDEBAR -->
+        <aside class="portal-side admin-side">
+          <div class="portal-brand">
+            <div class="portal-avatar admin-av">A</div>
+            <div>
+              <div class="portal-name">Admin</div>
+              <div class="portal-sno">Pink Horizon Academy</div>
+            </div>
+          </div>
+          <nav class="portal-nav">
+            <button class="pnav active" data-adm="adm-dashboard">Dashboard</button>
+            <button class="pnav" data-adm="adm-courses">Subjects</button>
+            <button class="pnav" data-adm="adm-sections">Schedules</button>
+            <button class="pnav" data-adm="adm-enrollments">Enrollments</button>
+            <button class="pnav" data-adm="adm-grades">Grades</button>
+          </nav>
+          <button class="portal-logout" id="adminLogout">Logout</button>
+        </aside>
+
+        <!-- ADMIN CONTENT -->
+        <div class="portal-main">
+
+          <!-- ADMIN DASHBOARD -->
+          <div class="lms-panel active" id="adm-dashboard">
+            <div class="lms-hero admin-hero">
+              <div>
+                <div class="lms-hi">Admin Portal</div>
+                <h1>Pink Horizon Academy</h1>
+                <div class="lms-meta">Manage subjects, schedules, enrollments and grades.</div>
+              </div>
+            </div>
+            <div class="lms-stat-row" id="admStats"></div>
+            <div class="panel" style="margin-top:20px;">
+              <h3>Quick Actions</h3>
+              <div class="quick-links" style="flex-direction:row;flex-wrap:wrap;gap:10px;margin-top:10px;">
+                <button class="btn-primary" data-adm="adm-courses">Add Subject</button>
+                <button class="btn-primary" data-adm="adm-sections">Add Schedule</button>
+                <button class="btn-primary" data-adm="adm-enrollments">Enroll Student</button>
+                <button class="btn-primary" data-adm="adm-grades">Enter Grades</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUBJECTS -->
+          <div class="lms-panel" id="adm-courses">
+            <div class="adm-header">
+              <div>
+                <h1 class="page-title">Subjects</h1>
+                <p class="page-sub">Master list of all courses offered.</p>
+              </div>
+              <button class="btn-primary" id="btnAddCourse">+ Add Subject</button>
+            </div>
+            <div class="panel">
+              <table class="lms-table" id="tblCourses">
+                <thead><tr><th>Code</th><th>Subject Name</th><th>Units</th><th>Description</th><th>Actions</th></tr></thead>
+                <tbody id="bodyAdmCourses"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SCHEDULES -->
+          <div class="lms-panel" id="adm-sections">
+            <div class="adm-header">
+              <div>
+                <h1 class="page-title">Schedules</h1>
+                <p class="page-sub">Assign subjects to a time slot, room and instructor.</p>
+              </div>
+              <button class="btn-primary" id="btnAddSection">+ Add Schedule</button>
+            </div>
+            <div class="panel">
+              <table class="lms-table" id="tblSections">
+                <thead><tr><th>Code</th><th>Subject</th><th>Section</th><th>Schedule</th><th>Room</th><th>Instructor</th><th>Semester</th><th>Actions</th></tr></thead>
+                <tbody id="bodyAdmSections"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ENROLLMENTS -->
+          <div class="lms-panel" id="adm-enrollments">
+            <div class="adm-header">
+              <div>
+                <h1 class="page-title">Enrollments</h1>
+                <p class="page-sub">Assign students to class sections.</p>
+              </div>
+              <button class="btn-primary" id="btnAddEnroll">+ Enroll Student</button>
+            </div>
+            <div class="panel">
+              <table class="lms-table" id="tblEnroll">
+                <thead><tr><th>Student No.</th><th>Name</th><th>Subject</th><th>Section</th><th>Schedule</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="bodyAdmEnroll"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- GRADES -->
+          <div class="lms-panel" id="adm-grades">
+            <div class="adm-header">
+              <div>
+                <h1 class="page-title">Grades</h1>
+                <p class="page-sub">Enter and update student grades.</p>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <label style="font-size:.85rem;font-weight:700;color:var(--plum);">Filter by Section</label>
+                <select id="gradeFilter" style="padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;"></select>
+              </div>
+            </div>
+            <div class="panel">
+              <table class="lms-table" id="tblGrades">
+                <thead><tr><th>Student No.</th><th>Name</th><th>Subject</th><th>Midterm</th><th>Finals</th><th>Final Grade</th><th>Remarks</th><th>Action</th></tr></thead>
+                <tbody id="bodyAdmGrades"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  <!-- ADMIN FORM MODAL -->
+  <div id="admModal" class="modal" hidden>
+    <div class="modal-card" style="max-width:500px;">
+      <button class="modal-close" id="admModalClose">✕</button>
+      <h2 id="admModalTitle" style="color:var(--blue-deep);margin-bottom:16px;"></h2>
+      <form id="admForm" autocomplete="off">
+        <div id="admFormFields"></div>
+        <div class="form-error" id="admFormError" hidden></div>
+        <div class="form-nav" style="margin-top:18px;">
+          <button type="button" class="btn-outline" id="admModalCancel">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- STUDENT DETAIL MODAL (registrar) -->
   <div id="modal" class="modal" hidden>
